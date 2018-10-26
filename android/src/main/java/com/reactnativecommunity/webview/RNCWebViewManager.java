@@ -1,8 +1,15 @@
 package com.reactnativecommunity.webview;
 
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.content.Context;
+
 import com.facebook.react.uimanager.UIManagerModule;
+
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -21,6 +28,8 @@ import android.graphics.Bitmap;
 import android.graphics.Picture;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
@@ -28,6 +37,7 @@ import android.webkit.ConsoleMessage;
 import android.webkit.CookieManager;
 import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
+import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -89,6 +99,11 @@ import org.json.JSONObject;
  */
 @ReactModule(name = RNCWebViewManager.REACT_CLASS)
 public class RNCWebViewManager extends SimpleViewManager<WebView> {
+  public interface IRNCWebViewManagerActivity {
+    public void setFilePathCallback(ValueCallback<Uri[]> filePathCallback);
+    public void setCameraPhotoPath(String cameraPhotoPath);
+  }
+  public static final int FILE_REQUEST_CODE = 112233;
 
   protected static final String REACT_CLASS = "RNCWebView";
 
@@ -412,6 +427,57 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         return true;
       }
 
+      @Override
+      public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, final WebChromeClient.FileChooserParams fileChooserParams) {
+
+        final Activity activity = reactContext.getCurrentActivity();
+        if(activity instanceof IRNCWebViewManagerActivity) {
+          ((IRNCWebViewManagerActivity) activity).setFilePathCallback(filePathCallback);
+
+          Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+          if (takePictureIntent.resolveActivity(activity.getPackageManager()) != null) {
+            // Create the File where the photo should go
+            File photoFile = null;
+            String cameraPhotoPath = null;
+            try {
+              photoFile = createImageFile();
+              takePictureIntent.putExtra("PhotoPath", cameraPhotoPath);
+            } catch (IOException ex) {
+              // Error occurred while creating the File
+            }
+
+            // Continue only if the File was successfully created
+            if (photoFile != null) {
+              cameraPhotoPath = "file:" + photoFile.getAbsolutePath();
+              takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(photoFile));
+            } else {
+              takePictureIntent = null;
+            }
+            ((IRNCWebViewManagerActivity) activity).setCameraPhotoPath(cameraPhotoPath);
+          }
+
+          Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
+          contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
+          contentSelectionIntent.setType(TextUtils.join(",", fileChooserParams.getAcceptTypes()));
+
+          Intent[] intentArray;
+          if (takePictureIntent != null) {
+            intentArray = new Intent[]{takePictureIntent};
+          } else {
+            intentArray = new Intent[2];
+          }
+
+          Intent chooserIntent = new Intent(Intent.ACTION_CHOOSER);
+          chooserIntent.putExtra(Intent.EXTRA_INTENT, contentSelectionIntent);
+          chooserIntent.putExtra(Intent.EXTRA_TITLE, "Image Chooser");
+          chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
+          activity.startActivityForResult(Intent.createChooser(chooserIntent, "Select images"), FILE_REQUEST_CODE);
+
+          return true;
+
+        }
+        return false;
+      }
 
     @Override
     public void onProgressChanged(WebView webView, int newProgress) {
@@ -751,5 +817,19 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     EventDispatcher eventDispatcher =
       reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher();
     eventDispatcher.dispatchEvent(event);
+  }
+
+  private File createImageFile() throws IOException {
+    // Create an image file name
+    String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+    String imageFileName = "JPEG_" + timeStamp + "_";
+    File storageDir = Environment.getExternalStoragePublicDirectory(
+            Environment.DIRECTORY_PICTURES);
+    File imageFile = File.createTempFile(
+            imageFileName,  /* prefix */
+            ".jpg",         /* suffix */
+            storageDir      /* directory */
+    );
+    return imageFile;
   }
 }
