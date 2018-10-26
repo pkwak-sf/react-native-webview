@@ -10,8 +10,10 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
@@ -457,8 +459,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           }
 
           Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
-          contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
-          contentSelectionIntent.setType(TextUtils.join(",", fileChooserParams.getAcceptTypes()));
+          Set<String> acceptTypes = new HashSet<>();
+          for(int i = 0; i < fileChooserParams.getAcceptTypes().length; i++) {
+            acceptTypes.add(fileChooserParams.getAcceptTypes()[i].split("/")[0] + "/*");
+          }
+          contentSelectionIntent.setType(TextUtils.join(",", acceptTypes.toArray()));
 
           Intent[] intentArray;
           if (takePictureIntent != null) {
