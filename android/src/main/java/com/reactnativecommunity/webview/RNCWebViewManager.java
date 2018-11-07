@@ -2,6 +2,7 @@ package com.reactnativecommunity.webview;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
@@ -105,6 +106,9 @@ import javax.annotation.Nullable;
  */
 @ReactModule(name = RNCWebViewManager.REACT_CLASS)
 public class RNCWebViewManager extends SimpleViewManager<WebView> {
+  public interface IRNCWebViewManagerActivity {
+    void onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, final WebChromeClient.FileChooserParams fileChooserParams);
+  }
 
   public static String activeUrl = null;
   public static final int COMMAND_GO_BACK = 1;
@@ -939,6 +943,12 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Override
     public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+      final Activity activity = mReactContext.getCurrentActivity();
+      if(activity instanceof IRNCWebViewManagerActivity) {
+        ((IRNCWebViewManagerActivity) activity).onShowFileChooser(webView, filePathCallback, fileChooserParams);
+        return true;
+      }
+
       String[] acceptTypes = fileChooserParams.getAcceptTypes();
       boolean allowMultiple = fileChooserParams.getMode() == WebChromeClient.FileChooserParams.MODE_OPEN_MULTIPLE;
       Intent intent = fileChooserParams.createIntent();
