@@ -1,6 +1,7 @@
 package com.reactnativecommunity.webview;
 
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.content.Context;
 import com.facebook.react.uimanager.UIManagerModule;
 import java.util.LinkedList;
@@ -89,6 +90,9 @@ import org.json.JSONObject;
  */
 @ReactModule(name = RNCWebViewManager.REACT_CLASS)
 public class RNCWebViewManager extends SimpleViewManager<WebView> {
+  public interface IRNCWebViewManagerActivity {
+    void onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, final WebChromeClient.FileChooserParams fileChooserParams);
+  }
 
   protected static final String REACT_CLASS = "RNCWebView";
 
@@ -400,7 +404,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
   @Override
   @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-  protected WebView createViewInstance(ThemedReactContext reactContext) {
+  protected WebView createViewInstance(final ThemedReactContext reactContext) {
     RNCWebView webView = createRNCWebViewInstance(reactContext);
     webView.setWebChromeClient(new WebChromeClient() {
       @Override
@@ -412,6 +416,15 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         return true;
       }
 
+      @Override
+      public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, final WebChromeClient.FileChooserParams fileChooserParams) {
+        final Activity activity = reactContext.getCurrentActivity();
+        if(activity instanceof IRNCWebViewManagerActivity) {
+          ((IRNCWebViewManagerActivity) activity).onShowFileChooser(webView, filePathCallback, fileChooserParams);
+          return true;
+        }
+        return false;
+      }
 
     @Override
     public void onProgressChanged(WebView webView, int newProgress) {
