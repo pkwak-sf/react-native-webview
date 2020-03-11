@@ -2,17 +2,25 @@
 
 Here's how to get started quickly with the React Native WebView.
 
-#### 1. Add react-native-webview to your dependencies
+## 1. Add react-native-webview to your dependencies
 
 ```
-$ npm install --save https://github.com/react-native-community/react-native-webview
+$ yarn add react-native-webview
 ```
 
-#### 2. Link native dependencies
+(or)
+
+For npm use
+
+```
+$ npm install --save react-native-webview
+```
+
+## 2. Link native dependencies
+
+From react-native 0.60 autolinking will take care of the link step but don't forget to run `pod install`
 
 React Native modules that include native Objective-C, Swift, Java, or Kotlin code have to be "linked" so that the compiler knows to include them in the app.
-
-Thankfully, there's a way to do this from the terminal with one command:
 
 ```
 $ react-native link react-native-webview
@@ -20,7 +28,39 @@ $ react-native link react-native-webview
 
 _NOTE: If you ever need to uninstall React Native WebView, run `react-native unlink react-native-webview` to unlink it._
 
-#### 3. Import the webview into your component
+### iOS:
+
+If using cocoapods in the `ios/` directory run
+
+```
+$ pod install
+```
+
+For iOS, while you can manually link the old way using [react-native own tutorial](https://reactnative.dev/docs/linking-libraries-ios), we find it easier to use cocoapods.
+If you wish to use cocoapods and haven't set it up yet, please instead refer to [that article](https://engineering.brigad.co/demystifying-react-native-modules-linking-ae6c017a6b4a).
+
+### Android:
+
+Android - react-native-webview version <6:
+This module does not require any extra step after running the link command 🎉
+
+Android - react-native-webview version >=6.X.X:
+Please make sure AndroidX is enabled in your project by editting `android/gradle.properties` and adding 2 lines:
+
+```
+android.useAndroidX=true
+android.enableJetifier=true
+```
+
+For Android manual installation, please refer to [this article](https://engineering.brigad.co/demystifying-react-native-modules-linking-964399ec731b) where you can find detailed step on how to link any react-native project.
+
+### macOS:
+
+Cocoapod and autolinking is not yet support for react-native macOS but is coming soon. In the meantime you must manually link.
+
+The method is nearly identical to the [manual linking method for iOS](https://reactnative.dev/docs/linking-libraries-ios#manual-linking) except that you will include the `node_modules/react-native-webview/macos/RNCWebView.xcodeproj` project in your main project and link the `RNCWebView-macOS.a` library.
+
+## 3. Import the webview into your component
 
 ```js
 import React, { Component } from 'react';
@@ -30,8 +70,8 @@ class MyWeb extends Component {
   render() {
     return (
       <WebView
-        source={{uri: 'https://infinite.red'}}
-        style={{marginTop: 20}}
+        source={{ uri: 'https://infinite.red' }}
+        style={{ marginTop: 20 }}
       />
     );
   }
